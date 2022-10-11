@@ -52,6 +52,7 @@ def solve_N(N, plot=False, ordre=1):
     # Boucle temporelle
     residual = 1.
     tolerance = 1e-6
+    time = 0
     while residual > tolerance:
         # Remplissage de la matrice
         A = np.zeros((N, N))
@@ -67,10 +68,15 @@ def solve_N(N, plot=False, ordre=1):
         A[N-1, N-1] = 1
         b[N-1] = C_e
 
-        A[0, 0] = -3
-        A[0, 1] = 4
-        A[0, 2] = -1
-        b[0] = 0
+        if ordre == 1:
+            A[0, 0] = -1
+            A[0, 1] = 1
+            b[0] = 0
+        else:
+            A[0, 0] = -3
+            A[0, 1] = 4
+            A[0, 2] = -1
+            b[0] = 0
 
         # Résoudre
         dc = np.linalg.solve(A, b).flatten() - c
@@ -78,6 +84,9 @@ def solve_N(N, plot=False, ordre=1):
 
         # Calcul du résidu
         residual = np.linalg.norm(dc)
+
+        time += dt
+        print(time/1e6, residual, c[0])
 
         if plot:
             ax.cla()
@@ -143,4 +152,4 @@ def plot_error():
     plt.show()
 
 if __name__=="__main__":
-    plot_error()
+    solve_n5()
