@@ -3,7 +3,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 # Fonction qui résous le problème pour un nombre d'élément N et un ordre donné
-def solve_N(N, plot=False, ordre=1):
+def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r, t : 0):
     # Définition de l'équation différentielle
     r, t, c, cr, crr, ct = sp.symbols("r, t, c, cr, crr, ct")
     k, S, D = sp.symbols("k, S, D")
@@ -33,13 +33,17 @@ def solve_N(N, plot=False, ordre=1):
 
     # Discrétisation du domaine et définition des coefficients
     R = 0.5
-    k = 4e-9 # 4e-9
-    S = 0 # 1e-8
+    if constant_source:
+        k = 0 # 4e-9
+        S = 1e-8 # 1e-8    
+    else:
+        k = 4e-9 # 4e-9
+        S = 0 # 1e-8
     D = 1e-10
     C_e = 10
 
     r = np.linspace(0, R, N)
-    dt = 1e8
+    dt = 1e6
     dr = r[1] - r[0]
 
     c = np.zeros(N)
@@ -51,7 +55,7 @@ def solve_N(N, plot=False, ordre=1):
 
     # Boucle temporelle
     residual = 1.
-    tolerance = 1e-12
+    tolerance = 1e-14
     time = 0
     while residual > tolerance:
         # Remplissage de la matrice
@@ -62,7 +66,7 @@ def solve_N(N, plot=False, ordre=1):
             A[i, i-1] = a_iim1(r[i], dr, dt, k, S, D)
             A[i, i+1] = a_iip1(r[i], dr, dt, k, S, D)
 
-            b[i] = b_i(r, dr, dt, k, S, D, c[i])
+            b[i] = b_i(r[i], dr, dt, k, S, D, c[i]) + extra_source(r[i], time)
 
         # Conditions limites
         A[N-1, N-1] = 1
@@ -86,7 +90,7 @@ def solve_N(N, plot=False, ordre=1):
         residual = np.linalg.norm(dc)
 
         time += dt
-        print(time/1e6, residual, c[0])
+        print(time/1e6, residual, c[0], extra_source(r[3], time))
 
         if plot:
             ax.cla()
@@ -113,7 +117,10 @@ def solve_N(N, plot=False, ordre=1):
     return {
         "L1":L1,
         "L2":L2,
-        "Linf":Linf
+        "Linf":Linf,
+        "r":r,
+        "c":c,
+        "t":time
     }
 
 
