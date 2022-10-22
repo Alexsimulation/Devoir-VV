@@ -33,13 +33,13 @@ def solve_N(N, plot=False, ordre=1):
 
     # Discrétisation du domaine et définition des coefficients
     R = 0.5
-    k = 0 # 4e-9
-    S = 1e-8 # 1e-8
+    k = 4e-9 # 4e-9
+    S = 0 # 1e-8
     D = 1e-10
     C_e = 10
 
     r = np.linspace(0, R, N)
-    dt = 1e10
+    dt = 1e8
     dr = r[1] - r[0]
 
     c = np.zeros(N)
@@ -51,7 +51,7 @@ def solve_N(N, plot=False, ordre=1):
 
     # Boucle temporelle
     residual = 1.
-    tolerance = 1e-6
+    tolerance = 1e-12
     time = 0
     while residual > tolerance:
         # Remplissage de la matrice
@@ -118,20 +118,19 @@ def solve_N(N, plot=False, ordre=1):
 
 
 # Fonction qui résous pour N=5 et ordre=1
-def solve_n5():
-    solve_N(5, plot=True, ordre=1)
+def solve_and_show(n=5, ordre=1):
+    solve_N(n, plot=True, ordre=ordre)
     plt.show()
 
 
 # Fonction qui génère un graphique de l'erreur selon le nombre d'éléments
-def plot_error():
+def plot_error(ordre=1):
     N = [round(5*10**(t/4)) for t in range(1, 8)]
     print("Nombre d'éléments:",N)
 
     es = {"L1":[], "L2":[], "Linf":[]}
-    ordre = 1
     for n in N:
-        e = solve_N(n, plot=False, ordre=1)
+        e = solve_N(n, plot=False, ordre=ordre)
         print(n, ":", e)
         es["L1"].append(e["L1"])
         es["L2"].append(e["L2"])
@@ -152,4 +151,4 @@ def plot_error():
     plt.show()
 
 if __name__=="__main__":
-    solve_n5()
+    solve_and_show(n=50, ordre=2)
