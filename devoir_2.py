@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sympy as sp
 
 
-def comsol():
+def comsol(N, ordre=1, plot=False):
     def read_comsol(filename):
         d = {"r":[], "c":[]}
         with open(filename, "rt") as f:
@@ -23,25 +23,42 @@ def comsol():
 
 
     d = solve_N(
-        N=100, 
+        N=N, 
         plot=False, 
-        ordre=2, 
+        ordre=ordre, 
         constant_source=False
     )
 
 
     comsol = read_comsol("data.txt")
 
-    fig, ax = plt.subplots()
+    if plot:
+        fig, ax = plt.subplots()
 
-    ax.plot(comsol["r"], comsol["c"], label="Comsol")
-    ax.plot(d["r"], d["c"], label="Notre code")
-    ax.legend()
+        ax.plot(comsol["r"], comsol["c"], label="Comsol")
+        ax.plot(d["r"], d["c"], label="Notre code")
+        ax.legend()
 
-    plt.show()
+        plt.show()
+
+    c_theo = []
+    for ri in d["r"]:
+        c_theo.append(np.interp(ri, comsol["r"], comsol["c"]))
+    c_theo = np.array(c_theo)
+
+    pi = sp.pi
+    R = 0.5
+    D = 1e-10
+    K = 4e-9
+    CE = 10
+    r = d["r"]
+    c = d["c"]
+    
+    L2 = np.sqrt(np.trapz((c - c_theo)**2, r)/R)
+    return L2
 
 
-def mms():
+def mms(N, ordre=1, plot=False):
     pi = sp.pi
     R = 0.5
     D = 1e-10
@@ -51,7 +68,7 @@ def mms():
 
     r, t = sp.symbols("r, t")
 
-    c = CE - sp.cos(pi/2*r/R) * sp.exp(t/1e9)
+    c = CE - sp.cos(pi/2*r/R) * sp.exp(t/1e10)
     cr = sp.diff(c, r)
     crr = sp.diff(cr, r)
     ct = sp.diff(c, t)
@@ -62,13 +79,14 @@ def mms():
     MS = sp.lambdify([r, t], c)
 
     d = solve_N(
-        N=10, 
+        N=N, 
         plot=False, 
-        ordre=2,
+        ordre=ordre,
         constant_source=False,
         extra_source=L,
         tf=1e7,
-        init=["func", lambda r : MS(r, 0)]
+        init=["func", lambda r : MS(r, 0)],
+        c_theo=["func",MS]
     )
 
     d["sc"] = []
@@ -76,15 +94,66 @@ def mms():
         d["sc"].append(MS(ri, d["t"]))
     d["sc"] = np.array(d["sc"])
 
-    fig, ax = plt.subplots()
+    if plot:
+        fig, ax = plt.subplots()
 
-    ax.plot(d["r"], d["c"], label="Notre code")
-    ax.plot(d["r"], d["sc"], label="MS")
+        ax.plot(d["r"], d["c"], label="Notre code")
+        ax.plot(d["r"], d["sc"], label="MS")
+        
+        ax.legend()
+
+        plt.show()
     
-    ax.legend()
-
-    plt.show()
+    return d["L2"]
 
 
 if __name__=="__main__":
-    mms()
+
+    # Comsol
+
+    N = [5, 10, 15, 20]
+    L2_o1s = []
+    L2_o2s = []
+    for n in N:
+        print(n)
+        L2_o1s.append( comsol(n, 1) )
+        L2_o2s.append( comsol(n, 2) )
+
+    fig, ax = plt.subplots()
+    ax.plot(N, L2_o1s, label="Order 1")
+    ax.plot(N, L2_o2s, label="Order 2")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend()
+    ax.set_xlabel("Nombre d'éléments")
+    ax.set_ylabel("Norme de l'erreur")
+    
+    L = len(N) - 1
+    ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[L]) - np.log(N[0]))
+    ordre_o2 = (np.log(L2_o2s[0]) - np.log(L2_o2s[L]))/(np.log(N[L]) - np.log(N[0]))
+    print(ordre_o1)
+    print(ordre_o2)
+
+    # MMS
+    N = [5, 10, 15, 20]
+    L2_o1s = []
+    L2_o2s = []
+    for n in N:
+        L2_o1s.append( mms(n, 1) )
+        L2_o2s.append( mms(n, 2) )
+    
+    L = len(N) - 1
+    ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[L]) - np.log(N[0]))
+    ordre_o2 = (np.log(L2_o2s[0]) - np.log(L2_o2s[L]))/(np.log(N[L]) - np.log(N[0]))
+    print(ordre_o1)
+    print(ordre_o2)
+
+    fig, ax = plt.subplots()
+    ax.plot(N, L2_o1s, label="Order 1")
+    ax.plot(N, L2_o2s, label="Order 2")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend()
+    ax.set_xlabel("Nombre d'éléments")
+    ax.set_ylabel("Norme de l'erreur")
+    plt.show()
