@@ -3,7 +3,7 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 # Fonction qui résous le problème pour un nombre d'élément N et un ordre donné
-def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r, t : 0):
+def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r, t : 0, tf=1e200, init=["none"]):
     # Définition de l'équation différentielle
     r, t, c, cr, crr, ct = sp.symbols("r, t, c, cr, crr, ct")
     k, S, D = sp.symbols("k, S, D")
@@ -43,10 +43,13 @@ def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r,
     C_e = 10
 
     r = np.linspace(0, R, N)
-    dt = 1e6
+    dt = 1e4
     dr = r[1] - r[0]
 
     c = np.zeros(N)
+    if init[0] != "none":
+        c = init[1](r)
+
 
     # Initialisation de la figure
     if plot:
@@ -57,7 +60,7 @@ def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r,
     residual = 1.
     tolerance = 1e-14
     time = 0
-    while residual > tolerance:
+    while (residual > tolerance)&(time < tf):
         # Remplissage de la matrice
         A = np.zeros((N, N))
         b = np.zeros((N, 1))
@@ -90,7 +93,6 @@ def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r,
         residual = np.linalg.norm(dc)
 
         time += dt
-        print(time/1e6, residual, c[0], extra_source(r[3], time))
 
         if plot:
             ax.cla()

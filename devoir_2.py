@@ -51,8 +51,7 @@ def mms():
 
     r, t = sp.symbols("r, t")
 
-
-    c = CE - sp.cos(pi/2*r/R) * sp.exp(t/(t**2+1))
+    c = CE - sp.cos(pi/2*r/R) * sp.exp(t/1e9)
     cr = sp.diff(c, r)
     crr = sp.diff(cr, r)
     ct = sp.diff(c, t)
@@ -67,7 +66,9 @@ def mms():
         plot=False, 
         ordre=2,
         constant_source=False,
-        extra_source=L
+        extra_source=L,
+        tf=1e7,
+        init=["func", lambda r : MS(r, 0)]
     )
 
     d["sc"] = []
