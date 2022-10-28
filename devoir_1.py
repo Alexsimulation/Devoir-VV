@@ -3,7 +3,8 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 # Fonction qui résous le problème pour un nombre d'élément N et un ordre donné
-def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r, t : 0, tf=1e200, init=["none"], c_theo=["none"]):
+def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r, t : 0, tf=1e200, init=["none"], c_theo=["none"], dt=1e6):
+    dt_in = dt
     # Définition de l'équation différentielle
     r, t, c, cr, crr, ct = sp.symbols("r, t, c, cr, crr, ct")
     k, S, D = sp.symbols("k, S, D")
@@ -43,7 +44,7 @@ def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r,
     C_e = 10
 
     r = np.linspace(0, R, N)
-    dt = 1e6
+    dt = dt_in
     dr = r[1] - r[0]
 
     c = np.zeros(N)
@@ -61,6 +62,9 @@ def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r,
     tolerance = 1e-14
     time = 0
     while (residual > tolerance)&(time < tf):
+
+        if time + dt >= tf:
+            dt = tf - time
         # Remplissage de la matrice
         A = np.zeros((N, N))
         b = np.zeros((N, 1))
@@ -92,14 +96,15 @@ def solve_N(N, plot=False, ordre=1, constant_source=True, extra_source=lambda r,
         # Calcul du résidu
         residual = np.linalg.norm(dc)
 
-        time += dt
+        if time < tf:
+            time += dt
 
         if plot:
             ax.cla()
             ax.set_title("Solution")
             ax.plot(r, c)
             plt.pause(1e-4)
-
+    print(time)
 
 
     # Calcul de l'erreur selon

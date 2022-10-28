@@ -58,7 +58,7 @@ def comsol(N, ordre=1, plot=False):
     return L2
 
 
-def mms(N, ordre=1, plot=False):
+def mms(N, ordre=1, plot=False, dt=1e6):
     pi = sp.pi
     R = 0.5
     D = 1e-10
@@ -84,9 +84,10 @@ def mms(N, ordre=1, plot=False):
         ordre=ordre,
         constant_source=False,
         extra_source=L,
-        tf=1e7,
+        tf=1e8,
         init=["func", lambda r : MS(r, 0)],
-        c_theo=["func",MS]
+        c_theo=["func",MS],
+        dt=dt
     )
 
     d["sc"] = []
@@ -111,7 +112,7 @@ if __name__=="__main__":
 
     # Comsol
 
-    N = [5, 10, 15, 20]
+    N = np.array([5, 10, 15, 20])
     L2_o1s = []
     L2_o2s = []
     for n in N:
@@ -127,6 +128,7 @@ if __name__=="__main__":
     ax.legend()
     ax.set_xlabel("Nombre d'éléments")
     ax.set_ylabel("Norme de l'erreur")
+    ax.set_title("Ordre de la solution vs Comsol avec variation de dx")
     
     L = len(N) - 1
     ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[L]) - np.log(N[0]))
@@ -134,13 +136,14 @@ if __name__=="__main__":
     print(ordre_o1)
     print(ordre_o2)
 
-    # MMS
-    N = [5, 10, 15, 20]
+    # MMS dx variation
+
+    N = np.array([5, 10, 15, 20])
     L2_o1s = []
     L2_o2s = []
     for n in N:
-        L2_o1s.append( mms(n, 1) )
-        L2_o2s.append( mms(n, 2) )
+        L2_o1s.append( mms(n, 1, dt=1e5) )
+        L2_o2s.append( mms(n, 2, dt=1e5) )
     
     L = len(N) - 1
     ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[L]) - np.log(N[0]))
@@ -156,4 +159,29 @@ if __name__=="__main__":
     ax.legend()
     ax.set_xlabel("Nombre d'éléments")
     ax.set_ylabel("Norme de l'erreur")
+    ax.set_title("Ordre de la solution MMS avec variation de dx")
+
+    # MMS dt variation
+    N = np.array([1e5, 2e5, 5e5, 1e6])
+    L2_o1s = []
+    L2_o2s = []
+    for n in N:
+        L2_o1s.append( mms(100, 1, dt=n) )
+        L2_o2s.append( mms(100, 2, dt=n) )
+    
+    L = len(N) - 1
+    ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[0]) - np.log(N[L]))
+    ordre_o2 = (np.log(L2_o2s[0]) - np.log(L2_o2s[L]))/(np.log(N[0]) - np.log(N[L]))
+    print(ordre_o1)
+    print(ordre_o2)
+
+    fig, ax = plt.subplots()
+    ax.plot(1/N, L2_o1s, label="Order 1")
+    ax.plot(1/N, L2_o2s, label="Order 2")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend()
+    ax.set_xlabel("Nombre de pas de temps")
+    ax.set_ylabel("Norme de l'erreur")
+    ax.set_title("Ordre de la solution MMS avec variation de dt")
     plt.show()
