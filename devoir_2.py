@@ -68,7 +68,7 @@ def mms(N, ordre=1, plot=False, dt=1e6):
 
     r, t = sp.symbols("r, t")
 
-    c = CE - sp.cos(pi/2*r/R) * sp.exp(t/1e10)
+    c = CE - sp.cos(pi/2*r/R) * (sp.exp(t/1e8) + 1)
     cr = sp.diff(c, r)
     crr = sp.diff(cr, r)
     ct = sp.diff(c, t)
@@ -135,15 +135,17 @@ if __name__=="__main__":
     ax.set_xlabel("Delta x")
     ax.set_ylabel("Norme de l'erreur")
     ax.set_title("Ordre de la solution vs Comsol avec variation de dx")
+    ax.grid("on")
+    fig.savefig("comsol.png")
 
     # MMS dx variation
 
-    N = np.array([5, 10, 15, 20])
+    N = np.array([10, 20, 50, 100])
     L2_o1s = []
     L2_o2s = []
     for n in N:
-        L2_o1s.append( mms(n, 1, dt=1e5) )
-        L2_o2s.append( mms(n, 2, dt=1e5) )
+        L2_o1s.append( mms(n, 1, dt=1e4) )
+        L2_o2s.append( mms(n, 2, dt=1e4) )
     
     L = len(N) - 1
     ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[L]) - np.log(N[0]))
@@ -160,14 +162,18 @@ if __name__=="__main__":
     ax.set_xlabel("Delta x")
     ax.set_ylabel("Norme de l'erreur")
     ax.set_title("Ordre de la solution MMS avec variation de dx")
+    ax.grid("on")
+    fig.savefig("mms_dx.png")
+
+    plt.show()
 
     # MMS dt variation
-    N = np.array([1e5, 2e5, 5e5, 1e6])
+    N = np.array([3e4, 1e5, 2e5, 5e5, 1e6])
     L2_o1s = []
     L2_o2s = []
     for n in N:
-        L2_o1s.append( mms(100, 1, dt=n) )
-        L2_o2s.append( mms(100, 2, dt=n) )
+        L2_o1s.append( mms(60, 1, dt=n) )
+        L2_o2s.append( mms(60, 2, dt=n) )
     
     L = len(N) - 1
     ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[0]) - np.log(N[L]))
@@ -184,4 +190,8 @@ if __name__=="__main__":
     ax.set_xlabel("Pas de temps")
     ax.set_ylabel("Norme de l'erreur")
     ax.set_title("Ordre de la solution MMS avec variation de dt")
+    ax.grid("on")
+    fig.savefig("mms_dt.png")
+
+
     plt.show()
