@@ -119,22 +119,22 @@ if __name__=="__main__":
         print(n)
         L2_o1s.append( comsol(n, 1) )
         L2_o2s.append( comsol(n, 2) )
-
-    fig, ax = plt.subplots()
-    ax.plot(N, L2_o1s, label="Order 1")
-    ax.plot(N, L2_o2s, label="Order 2")
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.legend()
-    ax.set_xlabel("Nombre d'éléments")
-    ax.set_ylabel("Norme de l'erreur")
-    ax.set_title("Ordre de la solution vs Comsol avec variation de dx")
     
     L = len(N) - 1
     ordre_o1 = (np.log(L2_o1s[0]) - np.log(L2_o1s[L]))/(np.log(N[L]) - np.log(N[0]))
     ordre_o2 = (np.log(L2_o2s[0]) - np.log(L2_o2s[L]))/(np.log(N[L]) - np.log(N[0]))
     print(ordre_o1)
     print(ordre_o2)
+
+    fig, ax = plt.subplots()
+    ax.plot(1/N, L2_o1s, label="Order 1")
+    ax.plot(1/N, L2_o2s, label="Order 2")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.legend()
+    ax.set_xlabel("Delta x")
+    ax.set_ylabel("Norme de l'erreur")
+    ax.set_title("Ordre de la solution vs Comsol avec variation de dx")
 
     # MMS dx variation
 
@@ -152,12 +152,12 @@ if __name__=="__main__":
     print(ordre_o2)
 
     fig, ax = plt.subplots()
-    ax.plot(N, L2_o1s, label="Order 1")
-    ax.plot(N, L2_o2s, label="Order 2")
+    ax.plot(1/N, L2_o1s, label="Order 1")
+    ax.plot(1/N, L2_o2s, label="Order 2")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend()
-    ax.set_xlabel("Nombre d'éléments")
+    ax.set_xlabel("Delta x")
     ax.set_ylabel("Norme de l'erreur")
     ax.set_title("Ordre de la solution MMS avec variation de dx")
 
@@ -176,12 +176,12 @@ if __name__=="__main__":
     print(ordre_o2)
 
     fig, ax = plt.subplots()
-    ax.plot(1/N, L2_o1s, label="Order 1")
-    ax.plot(1/N, L2_o2s, label="Order 2")
+    ax.plot(N, L2_o1s, label="Order 1")
+    ax.plot(N, L2_o2s, label="Order 2")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend()
-    ax.set_xlabel("Nombre de pas de temps")
+    ax.set_xlabel("Pas de temps")
     ax.set_ylabel("Norme de l'erreur")
     ax.set_title("Ordre de la solution MMS avec variation de dt")
     plt.show()
