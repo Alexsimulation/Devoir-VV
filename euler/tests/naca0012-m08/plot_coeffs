@@ -1,0 +1,5 @@
+set term wxt size 800, 600
+set size 1., 1.
+set xlabel 'Iterations'
+set ylabel 'Coefficients'
+plot for [i=2:*] 'coeffs.data' using 1:i with lines title columnhead

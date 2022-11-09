@@ -1,0 +1,29 @@
+Euler Solver
+ - Log created at 09-11-2022 17h-28m-36s
+
+Mesh metrics
+ - Number of nodes = 2000
+ - Number of edges = 998
+ - Number of faces = 999
+ - Import time     = 0.004 s
+
+Solver Settings 
+ - CFL       = 0.1
+ - Max steps = 100000
+ - Max time  = 0.2
+ - Tolerance = 1e-14
+ - Solver    = Euler transient
+ - Order     = 1
+ - Smoother
+   - Smoother Type = none
+
+
+Solution metrics 
+ - Solver time   = 1.153 s
+ - Solver steps  = 8718
+ - Physical time = 0.2
+ - Final residuals
+   - R(rho)   = 0.186318
+   - R(rho*u) = 0.000176732
+   - R(rho*v) = 4.43937e-05
+   - R(rho*e) = 0.241033

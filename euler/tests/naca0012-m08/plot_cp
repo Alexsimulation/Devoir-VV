@@ -1,0 +1,6 @@
+set term wxt size 800, 600
+set size 1., 1.
+set xlabel 'x/c'
+set ylabel 'Cp'
+plot [-0.1:1.1] [1.5:-1.5] 'reference.data' using 1:2 with lp linecolor 1 title 'Reference',\
+'airfoil.data' using 1:6 with lp linecolor 8 title 'Our result'

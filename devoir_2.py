@@ -86,7 +86,7 @@ def mms(N, ordre=1, plot=False, dt=1e6):
         extra_source=L,
         tf=1e8,
         init=["func", lambda r : MS(r, 0)],
-        c_theo=["func",MS],
+        c_theo=["func", MS],
         dt=dt
     )
 

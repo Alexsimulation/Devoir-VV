@@ -1,0 +1,6 @@
+set term wxt size 800, 600
+set size 1., 1.
+set logscale y 10
+set xlabel 'Iterations'
+set ylabel 'Residuals'
+plot for [i=2:*] 'residuals.data' using 1:i with lines title columnhead
