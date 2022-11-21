@@ -626,7 +626,7 @@ public:
             const auto tag = m.boundsTags[i];
             const auto n = m.boundsNormals[i];
 
-            // Compute virtual cell boundary value
+            // Compute v cell boundary value
             //   Use order 1 extrapolation for wall cell value
             /*
             const auto bvar = m.boundsFuncs[i](

@@ -12,9 +12,9 @@ public:
         internal_calc_qt(qt, q);
     }
 
-    virtual bool isTransient();
-    virtual void dtFromCfl();
-    virtual void update_cells();
+    virtual bool isTransient() {}
+    virtual void dtFromCfl() {}
+    virtual void update_cells() {}
 
 };
 

@@ -3,7 +3,7 @@ import euler
 
 
 # Load mesh from gmsh
-case = "-128"
+case = "-64"
 mesh = euler.mesh("naca0012" + case + ".su2")
 
 # Define problem constants
@@ -34,7 +34,7 @@ solver = euler.steadyRk5Solver(
 
 # Set solver properties
 solver.set_cfl(5.)
-solver.set_print_interval(250)
+solver.set_print_interval(100)
 solver.set_tolerance(1e-16)
 solver.set_max_steps(10000)
 solver.set_order(2)
