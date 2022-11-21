@@ -3,7 +3,8 @@ import euler
 
 
 # Load mesh from gmsh
-mesh = euler.mesh("naca0012.su2")
+case = "-128"
+mesh = euler.mesh("naca0012" + case + ".su2")
 
 # Define problem constants
 constants = euler.constants(
@@ -32,12 +33,12 @@ solver = euler.steadyRk5Solver(
 )
 
 # Set solver properties
-solver.set_cfl(2.5)
-solver.set_print_interval(500)
+solver.set_cfl(5.)
+solver.set_print_interval(250)
 solver.set_tolerance(1e-16)
-solver.set_max_steps(16000)
+solver.set_max_steps(10000)
 solver.set_order(2)
-solver.set_smoother("implicit", 0.6, 2)
+solver.set_smoother("implicit", 0.3, 2)
 solver.set_limiter("venkatakrishnan")
 solver.set_coefficient_save_field("airfoil", q_inf)
 
@@ -52,16 +53,16 @@ log = solver.log()
 
 
 # Write all results to file
-solver.writeVtk("results.vtk")
+solver.writeVtk("results" + case + ".vtk")
 
 # Write residuals to file
-solver.writeResiduals("residuals.data")
+solver.writeResiduals("residuals" + case + ".data")
 
 # Write variables on airfoil to file
-solver.writeField("airfoil", "airfoil.data", q_inf)
+solver.writeField("airfoil", "airfoil" + case + ".data", q_inf)
 
 # Write coefficients
-solver.writeSavedCoefficients("coeffs.data")
+solver.writeSavedCoefficients("coeffs" + case + ".data")
 
 
 # Compute and print coefficients
@@ -76,5 +77,5 @@ log += " - CD = " + str(coeffs[0]) + "\n"
 log += " - CL = " + str(coeffs[1]) + "\n"
 log += " - CM = " + str(coeffs[2]) + "\n"
 
-with open("solver.log", "wt") as f:
+with open("solver" + case + ".log", "wt") as f:
     f.write(log)

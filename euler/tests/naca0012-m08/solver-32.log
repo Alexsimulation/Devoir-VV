@@ -1,0 +1,42 @@
+Euler Solver
+ - Log created at 15-11-2022 14h-40m-08s
+
+Mesh metrics
+ - Number of nodes = 1056
+ - Number of edges = 2016
+ - Number of faces = 1024
+ - Import time     = 0.002 s
+
+Solver Settings 
+ - CFL       = 5
+ - Max steps = 10000
+ - Tolerance = 1e-16
+ - Solver    = Rk5 steady
+ - Order     = 2
+ - Limiter   = venkatakrishnan
+ - Smoother
+   - Smoother Type = implicit
+   - Iterations    = 2
+   - Coefficient   = 0.3
+
+Boundary conditions
+ - airfoil = wall
+ - farfield = farfield
+   - rho = 1.4
+   - u   = 0.79981
+   - v   = 0.0174519
+   - p   = 1
+
+Solution metrics 
+ - Solver time   = 13.749 s
+ - Solver steps  = 10000
+ - Final residuals
+   - R(rho)   = 4.73527e-14
+   - R(rho*u) = 1.4112e-13
+   - R(rho*v) = 3.40554e-14
+   - R(rho*e) = 5.76636e-14
+
+Aerodynamic coefficients
+ - CD = 0.028533201572123138
+ - CL = 0.3070807144978252
+ - CM = -0.03526714008584253

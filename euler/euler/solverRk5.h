@@ -12,11 +12,13 @@ public:
     std::vector<var> qk;
     std::array<real, 5> alphas = {0.0533, 0.1263, 0.2375, 0.4414, 1.0};
 
+    virtual void calc_qt() {}
     virtual bool isTransient() {}
     virtual void dtFromCfl() {}
     virtual void update_cells() {}
 
 };
+
 
 class transientRk5Solver : public rk5Solver {
 public:
@@ -102,6 +104,8 @@ public:
 
 class steadyRk5Solver : public rk5Solver {
 public:
+
+    steadyRk5Solver() {}
 
     steadyRk5Solver(
         const mesh& m_in,

@@ -225,7 +225,24 @@ std::string solver::log() {
     if (smoother_type != "none") {
         s += "   - Iterations    = " + formatDefault(smoother_iters) + "\n";
         s += "   - Coefficient   = " + formatDefault(smoother_coefficient) + "\n";
-    } else { s += "\n"; }
+    }
+    s += "\n";
+
+    // Boundary conditions
+    s += "Boundary conditions\n";
+    for (auto bi : bcTypes) {
+        s += " - ";
+        s += bi.first;
+        s += " = " + bi.second + "\n";
+        if (bi.first == "farfield") {
+            var qb = bcValues[bi.first];
+            auto R = convertVariable(qb, c);
+            s += "   - rho = " + formatDefault(R.rho) + "\n";
+            s += "   - u   = " + formatDefault(R.u) + "\n";
+            s += "   - v   = " + formatDefault(R.v) + "\n";
+            s += "   - p   = " + formatDefault(R.p) + "\n";
+        }
+    }
     s += "\n";
 
     // Solution metrics

@@ -17,6 +17,7 @@ struct vec2 {
     real x;
     real y;
     vec2() {x=0.; y=0;}
+    vec2(real a) {x=a; y=a;}
     vec2(real a, real b) {x=a; y=b;}
     vec2 operator + (const vec2 &v) const {
         return vec2(x + v.x, y + v.y);
@@ -184,12 +185,14 @@ struct var {
         else if (idx == 1) { return rhou; }
         else if (idx == 2) { return rhov; }
         else if (idx == 3) { return rhoe; }
+        else { return rho; }
     }
     const real& operator[](uint idx) const {
         if (idx == 0) { return rho; }
         else if (idx == 1) { return rhou; }
         else if (idx == 2) { return rhov; }
         else if (idx == 3) { return rhoe; }
+        else { return rho; }
     }
 };
 
@@ -228,6 +231,12 @@ struct varVec2 {
         y += v.y;
         return *this;
     }
+    varVec2 operator + (const varVec2 &v) const {
+        return varVec2(x+v.x, y+v.y);
+    }
+    varVec2 operator - (const varVec2 &v) const {
+        return varVec2(x-v.x, y-v.y);
+    }
     varVec2& operator -= (const varVec2 &v) {
         x -= v.x;
         y -= v.y;
@@ -247,6 +256,9 @@ struct varVec2 {
     varVec2 operator * (const var &v) const {
         return varVec2(x*v, y*v);
     }
+    varVec2 operator * (const real &v) const {
+        return varVec2(x*v, y*v);
+    }
     varVec2 operator * (const vec2 &b) const {
         return varVec2(
             x*b.x,
@@ -257,6 +269,10 @@ struct varVec2 {
 
 var dot(const varVec2& a, const vec2& b) {
     return a.x*b.x + a.y*b.y;
+}
+
+varVec2 prodVarVec2(const var& v, const vec2 &s) {
+    return varVec2(v*s.x, v*s.y);
 }
 
 
@@ -286,6 +302,22 @@ namespace std {
             min(a.rhou, b.rhou),
             min(a.rhov, b.rhov),
             min(a.rhoe, b.rhoe)
+        );
+    }
+    inputVar max(const inputVar& a, const inputVar& b) {
+        return inputVar(
+            max(a.rho, b.rho),
+            max(a.u, b.u),
+            max(a.v, b.v),
+            max(a.p, b.p)
+        );
+    }
+    inputVar min(const inputVar& a, const inputVar& b) {
+        return inputVar(
+            min(a.rho, b.rho),
+            min(a.u, b.u),
+            min(a.v, b.v),
+            min(a.p, b.p)
         );
     }
     varVec2 max(const varVec2& a, const varVec2& b) {
@@ -372,7 +404,7 @@ struct mesh {
     std::vector<uint> boundsNodes1;
     std::vector<real> boundsLengths;
     std::vector<std::string> boundsTags;
-    std::vector<var (*)(const var&, const var&, const vec2&, const constants&)> boundsFuncs;
+    std::vector<var (*)(const var&, const var&, const varVec2&, const vec2&, const vec2&, const constants&)> boundsFuncs;
 
     std::map<std::tuple<uint, uint>, uint> boundsRef;
 
@@ -383,6 +415,8 @@ struct mesh {
     std::vector<bool> faceIsTriangle;
     std::vector<real> facesAreas;
     std::vector<vec2> facesCenters;
+
+    std::vector<std::string> uniqueBoundsTags;
 
     real import_duration;
 

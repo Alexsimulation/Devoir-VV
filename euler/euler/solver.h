@@ -9,10 +9,10 @@
 #include <omp.h>
 #include <sstream>
 #include <stdexcept>
+#include <csignal>
 
 
 #ifdef EULER_PYTHON_MODULE
-    #include <csignal>
     #include <pybind11/embed.h>
 
     void catch_signals() {
@@ -136,9 +136,9 @@ public:
     std::vector<var> boundsFlux;
     std::vector<var> residuals;
 
-    var (*limiterFunc)(const varVec2&, const var&, const var&, const var&, const vec2&, const real&, const vec2&) = &limiterOne;
+    var (*limiterFunc)(const varVec2&, const var&, const var&, const var&, const vec2&, const real&, const vec2&) = &limiterVenkatakrishnan;
     void (*smootherFunc)(std::vector<var>&, std::vector<var>&, std::vector<var>&, const mesh&, const real&, const uint&) = &emptySmoother;
-    std::string limiter_type = "none";
+    std::string limiter_type = "venkatakrishnan";
     std::string smoother_type = "none";
 
     constants c;
@@ -149,7 +149,7 @@ public:
     uint maxSteps = 4294967295;
     real cfl = 0.8;
     real maxTime = 1e10;
-    uint rescaleNSteps = 10;
+    uint rescaleNSteps = 1;
 
     real dt;
     std::vector<real> dtv;
@@ -168,6 +168,14 @@ public:
     std::vector<real> CD, CL, CM;
 
     real tolerance = 1.e-14;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> stop;
+    int step = 0;
+    real time = 0.;
+    var Runscaled = var(1., 1., 1., 1.);
+    var R = var(1., 1., 1., 1.);
+    var Rn = var(0., 0., 0., 0.);
 
     virtual bool isTransient() {}
 
@@ -236,6 +244,7 @@ public:
     void set_cfl(real cfl_in) { cfl = cfl_in; }
     void set_print_interval(uint in) { printInterval = in; }
     void set_max_steps(uint in) { maxSteps = in; }
+    uint get_max_steps() {return maxSteps;}
     void set_max_time(real in) { maxTime = in; }
     void set_order(int order) {
         if (order == 1) {
@@ -261,12 +270,10 @@ public:
 
     var computeResidual() {
         var R; R = 0.;
-        var sumQ; sumQ = 0.;
         for (int i=0; i<qt.size(); ++i) {
             R += qt[i] * qt[i];
-            sumQ += std::abs(q[i]);
         }
-        return sqrt(R) / sumQ;
+        return sqrt(R);
     }
 
     vec2 forceOnField(std::string field);
@@ -296,7 +303,7 @@ public:
         // If second order, compute gradients
         if (isSecondOrder) {
             computeNodalValues(q_);
-            computeGradients();
+            computeGradients(q_);
             compute_q_min_max(q_);
             compute_limiters(q_);
         }
@@ -330,6 +337,8 @@ public:
                 auto fluxR = convectiveFlux(qfR, n, c);
                 auto fluxL = convectiveFlux(qfL, n, c);
                 auto flux = (fluxR + fluxL)*0.5;
+                
+                //auto flux = convectiveFlux((qfL + qfR)*0.5, n, c);
 
                 // Compute diffusion
                 auto diffusion = artificialDiffusion(qfR, qfL, n, c);
@@ -350,20 +359,28 @@ public:
                 const auto n = m.boundsNormals[i];
 
                 auto qf = q_[m.boundsFaces[i]];
-                auto bvar = m.boundsFuncs[i](qf, bcValues.at(tag), n, c);
 
+                auto df = m.boundsCenters[i] - m.facesCenters[m.boundsFaces[i]];
+
+                auto gf = varVec2(0.);
+                if (isSecondOrder) {
+                    gf = g[m.boundsFaces[i]] * limiters[m.boundsFaces[i]];
+                }
+
+                auto bvar = m.boundsFuncs[i](
+                    qf, bcValues.at(tag), 
+                    gf, 
+                    df, n, c
+                );
+                
                 if (isSecondOrder) {
                     qf += dot(
                             g[m.boundsFaces[i]] * limiters[m.boundsFaces[i]],
                             m.boundsCenters[i] - m.facesCenters[m.boundsFaces[i]]
                         );
-                    bvar += dot(
-                            g[m.boundsFaces[i]] * limiters[m.boundsFaces[i]],
-                            m.facesCenters[m.boundsFaces[i]] - m.boundsCenters[i]
-                        );
                 }
 
-                auto flux = (convectiveFlux(bvar, n, c) + convectiveFlux(qf, n, c))*0.5;
+                auto flux = convectiveFlux((qf + bvar)*0.5, n, c);
 
                 // Compute diffusion
                 auto diffusion = artificialDiffusion(bvar, qf, n, c);
@@ -398,16 +415,22 @@ public:
         smootherFunc(qt_, smoother, smoother_qt, m, smoother_coefficient, smoother_iters);
     }
 
-    void simulate(bool verb=true) {
-        // time loop
-        auto start = std::chrono::high_resolution_clock::now();
-        int step = 0;
-        real time = 0.;
-        var Runscaled = var(1., 1., 1., 1.);
-        var R = var(1., 1., 1., 1.);
-        var Rn = var(0., 0., 0., 0.);
+    bool convergence_check() {
+        return (step < maxSteps)&(time < maxTime)&(std::max(R) > tolerance);
+    }
+
+    void init_solver(bool verb) {
+        start = std::chrono::high_resolution_clock::now();
+        step = 0;
+        time = 0.;
+        Runscaled = var(1., 1., 1., 1.);
+        R = var(1., 1., 1., 1.);
+        Rn = var(0., 0., 0., 0.);
         residuals.clear();
-        
+        CD.clear();
+        CL.clear();
+        CM.clear();
+
         if (verb) {
             std::cout << "Solver Settings " << "\n";
             std::cout << " - CFL       = " << cfl << "\n";
@@ -415,72 +438,54 @@ public:
             std::cout << " - Tolerance = " << tolerance << "\n";
             std::cout << std::endl;
         }
-        while ((step < maxSteps)&(time < maxTime)&(std::max(R) > tolerance)) {
+    }
 
-            // Compute dt from cfl
-            dtFromCfl();
-            if (isTransient()) {
-                if ((time + dt) > maxTime) {
-                    dt = maxTime - time;
-                }
+    void internal_solver_step(
+        bool verb
+    ) {
+        // Compute dt from cfl
+        dtFromCfl();
+        if (isTransient()) {
+            if ((time + dt) > maxTime) {
+                dt = maxTime - time;
             }
-
-            // Compute qt
-            calc_qt();
-
-            // Update all cells
-            update_cells();
-
-            // Save coefficients
-            if (saveCoefficients) {
-                real cd, cl, cm;
-                std::tie(cd, cl, cm) = computeCoefficients(
-                    coeffField, 
-                    coeffVar
-                );
-                CD.push_back(cd);
-                CL.push_back(cl);
-                CM.push_back(cm);
-            }
-
-            // Update time, step
-            if (isTransient()) {
-                time += dt;
-            }
-            if (step < rescaleNSteps) {
-                Runscaled = computeResidual();
-                Rn += Runscaled / ((real) rescaleNSteps);
-                R = Runscaled / Rn;
-                residuals.push_back(R);
-            } else if (!isTransient()) {
-                R = computeResidual() / Rn;
-                residuals.push_back(R);
-            }
-            step += 1;
-            // Print results
-            if (verb) {
-                if ((step % printInterval) == 0) {
-                    if (isTransient()) {
-                        R = computeResidual() / Rn;
-                    }
-                    std::cout << "Step = " << step;
-                    if (isTransient()) {
-                        std::cout << ", Time = " << time;
-                    }
-                    std::cout << "\n";
-                    std::cout << " - R(rho)   = " << R.rho  << "\n";
-                    std::cout << " - R(rho*u) = " << R.rhou << "\n";
-                    std::cout << " - R(rho*v) = " << R.rhov << "\n";
-                    std::cout << " - R(rho*e) = " << R.rhoe << "\n";
-                    std::cout << std::endl;
-                }
-            }
-            
-            catch_signals();
         }
-        auto stop = std::chrono::high_resolution_clock::now();
+
+        // Compute qt
+        calc_qt();
+
+        // Update all cells
+        update_cells();
+
+        // Save coefficients
+        if (saveCoefficients) {
+            real cd, cl, cm;
+            std::tie(cd, cl, cm) = computeCoefficients(
+                coeffField, 
+                coeffVar
+            );
+            CD.push_back(cd);
+            CL.push_back(cl);
+            CM.push_back(cm);
+        }
+
+        // Update time, step
+        if (isTransient()) {
+            time += dt;
+        }
+        if (step < rescaleNSteps) {
+            Runscaled = computeResidual();
+            Rn += Runscaled / ((real) rescaleNSteps);
+            R = Runscaled / Rn;
+            residuals.push_back(R);
+        } else if (!isTransient()) {
+            R = computeResidual() / Rn;
+            residuals.push_back(R);
+        }
+        step += 1;
+        // Print results
         if (verb) {
-            if ((step % printInterval) != 0) {
+            if ((step % printInterval) == 0) {
                 if (isTransient()) {
                     R = computeResidual() / Rn;
                 }
@@ -496,6 +501,27 @@ public:
                 std::cout << std::endl;
             }
         }
+        
+        catch_signals();
+    }
+
+    void end_solver(bool verb) {
+        stop = std::chrono::high_resolution_clock::now();
+        if (verb) {
+            if (isTransient()) {
+                R = computeResidual() / Rn;
+            }
+            std::cout << "Step = " << step;
+            if (isTransient()) {
+                std::cout << ", Time = " << time;
+            }
+            std::cout << "\n";
+            std::cout << " - R(rho)   = " << R.rho  << "\n";
+            std::cout << " - R(rho*u) = " << R.rhou << "\n";
+            std::cout << " - R(rho*v) = " << R.rhov << "\n";
+            std::cout << " - R(rho*e) = " << R.rhoe << "\n";
+            std::cout << std::endl;
+        }
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
         if (verb) {
             if (isTransient()) {
@@ -507,6 +533,18 @@ public:
         info.solver_time = ((double) duration.count())/1000.;
         info.final_residuals = R;
         info.final_time = time;
+    }
+
+    void simulate(bool verb=true) {
+        // Init solver
+        init_solver(verb);
+
+        // Main loop
+        while (convergence_check()) {
+            internal_solver_step(verb);
+        }
+        
+        end_solver(verb);
     }
 
     void computeNodalValues(std::vector<var>& q_) {
@@ -534,7 +572,7 @@ public:
         }
     }
 
-    void computeGradients() {
+    void computeGradients(std::vector<var>& q_) {
         // Reset gradients
         for (int i=0; i<g.size(); ++i) {
             g[i].x = 0.;
@@ -545,17 +583,22 @@ public:
             // Add edge contribution to faces gradients
             const auto n0 = m.edgesNodes0[i];
             const auto n1 = m.edgesNodes1[i];
-            const auto nodalV = varVec2( (q_nodes[n0] + q_nodes[n1])*0.5 * m.edgesLengths[i] );
-            g[m.edgesFaces0[i]] += nodalV * m.edgesNormals[i];
-            g[m.edgesFaces1[i]] -= nodalV * m.edgesNormals[i];
+            const auto edgeV = varVec2( (q_nodes[n0] + q_nodes[n1])*0.5 * m.edgesLengths[i] );
+            //const auto f0 = m.edgesFaces0[i];
+            //const auto f1 = m.edgesFaces1[i];
+            //const auto edgeV = varVec2( (q_[f0] + q_[f1])*0.5 * m.edgesLengths[i] );
+            g[m.edgesFaces0[i]] += edgeV * m.edgesNormals[i];
+            g[m.edgesFaces1[i]] -= edgeV * m.edgesNormals[i];
         }
         for (int i=0; i<m.boundsLengths.size(); ++i) {
             // Add boundary contribution to faces gradients
             const auto n0 = m.boundsNodes0[i];
             const auto n1 = m.boundsNodes1[i];
-
-            const auto nodalV = varVec2( (q_nodes[n0] + q_nodes[n1])*0.5 * m.boundsLengths[i] );
-            g[m.boundsFaces[i]] += nodalV * m.boundsNormals[i];
+            const auto edgeV = varVec2( (q_nodes[n0] + q_nodes[n1])*0.5 * m.boundsLengths[i] );
+            //const auto f0 = m.boundsFaces[i];
+            //const auto f1 = m.boundsFaces[i];
+            //const auto edgeV = varVec2( (q_[f0] + q_[f1])*0.5 * m.edgesLengths[i] );
+            g[m.boundsFaces[i]] += edgeV * m.boundsNormals[i];
         }
         // Divide by cell areas
         for (int i=0; i<m.facesAreas.size(); ++i) {
@@ -585,7 +628,14 @@ public:
 
             // Compute virtual cell boundary value
             //   Use order 1 extrapolation for wall cell value
-            // const auto bvar = m.boundsFuncs[i](q_[f], bcValues.at(tag), n, c);
+            /*
+            const auto bvar = m.boundsFuncs[i](
+                q_[f],
+                bcValues.at(tag), 
+                varVec2(0.),
+                vec2(0.), n, c
+            );
+            */
             const auto bvar = q_[f];// + dot(g[f], (m.boundsCenters[i] - m.facesCenters[f]));
             q_min[f] = std::min(bvar, q_min[f]);
             q_max[f] = std::max(bvar, q_max[f]);
@@ -647,6 +697,8 @@ public:
     void writeSavedCoefficients(std::string filename);
 
     std::vector<inputVar> get_solution();
+
+    std::vector<var>& get_raw_solution() { return q; }
 
     std::string log();
 

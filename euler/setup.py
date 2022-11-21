@@ -13,7 +13,7 @@ ext_modules = [
         "euler",
         ["./src/python.cpp"],  # Sort source files for reproducibility
         include_dirs=["./"],
-        extra_compile_args = ["-std=c++17", "-fopenmp", "-fopenmp-simd", "-Ofast", "-w", "-DEULER_PYTHON_MODULE"],
+        extra_compile_args = ["-std=c++17", "-fopenmp", "-fopenmp-simd", "-Ofast", "-march=native", "-w", "-DEULER_PYTHON_MODULE"],
         extra_link_args=['-lgomp']
     )
 ]

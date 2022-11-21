@@ -6,6 +6,7 @@
 #include <euler/flux.h>
 #include <fstream>
 #include <chrono>
+#include <algorithm>
 
 
 
@@ -536,22 +537,28 @@ void mesh::read_su2_boundaries(std::vector<std::string>& content) {
         auto NELM = std::stoi(cut_str(content[current_line], '=')[1]);
         current_line += 1;
 
-        for (int j=0; j<NELM; ++j) {
-            auto bound = str_to_ints( trim_all_whitespaces(content[current_line]) );
+        if (tag != "internal") {
+            uniqueBoundsTags.push_back(tag);
+        
+            for (int j=0; j<NELM; ++j) {
+                auto bound = str_to_ints( trim_all_whitespaces(content[current_line]) );
 
-            boundsNormals.push_back(vec2());
-            boundsCenters.push_back(vec2());
-            boundsFaces.push_back(0);
-            boundsLengths.push_back(0.);
-            boundsNodes0.push_back(bound[1]);
-            boundsNodes1.push_back(bound[2]);
-            boundsTags.push_back(tag);
-            const uint nmin = std::min(bound[1], bound[2]);
-            const uint nmax = std::max(bound[1], bound[2]);
-            boundsRef.insert({ std::make_tuple(nmin, nmax), boundsLengths.size()-1 });
-            boundsFuncs.push_back(boundaryFuncMap().at("null"));
-            
-            current_line += 1;
+                boundsNormals.push_back(vec2());
+                boundsCenters.push_back(vec2());
+                boundsFaces.push_back(0);
+                boundsLengths.push_back(0.);
+                boundsNodes0.push_back(bound[1]);
+                boundsNodes1.push_back(bound[2]);
+                boundsTags.push_back(tag);
+                const uint nmin = std::min(bound[1], bound[2]);
+                const uint nmax = std::max(bound[1], bound[2]);
+                boundsRef.insert({ std::make_tuple(nmin, nmax), boundsLengths.size()-1 });
+                boundsFuncs.push_back(boundaryFuncMap().at("null"));
+                
+                current_line += 1;
+            }
+        } else {
+            current_line += NELM;
         }
     }
 

@@ -89,16 +89,16 @@ solver.writeVtk(str filename)
 - [x] Ajouter graphique de résidus
 - [x] Tester l'ordre du schéma dans un cas avec chocs
 - [x] Tester l'ordre du schéma dans un cas sans chocs
-- [ ] Ajouter un calcul de forces et coefficients aérodynamiques
-- [ ] Obtenir des résultats d'ordre 1 pour divers cas
+- [x] Ajouter un calcul de forces et coefficients aérodynamiques
+- [x] Obtenir des résultats d'ordre 1 pour divers cas
 - [ ] Documenter les équations et méthodes utilisées
 
 ### Tier 2 - Ordre 2
 - [x] Ajouter calcul des gradients
 - [x] Ajouter flux d'ordre 2
-- [ ] Tester l'ordre du schéma dans un cas avec chocs
-- [ ] Tester l'ordre du schéma dans un cas sans chocs
-- [ ] Obtenir des résultats d'ordre 2 pour divers cas
+- [x] Tester l'ordre du schéma dans un cas avec chocs
+- [x] Tester l'ordre du schéma dans un cas sans chocs
+- [x] Obtenir des résultats d'ordre 2 pour divers cas
 - [ ] Documenter les équations et méthodes utilisées
 
 ### Tier 3 - Extras / Performance
@@ -107,3 +107,5 @@ solver.writeVtk(str filename)
 - [x] Ajouter une sortie format vtk pour visualiser avec Paraview
 - [x] Ajouter un API Python
 - [x] Ajotuer parallélisation OpenMP
+- [x] Ajouter un logger
+- [ ] Ajouter les frontières au logger

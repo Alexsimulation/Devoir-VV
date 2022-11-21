@@ -27,7 +27,7 @@ var convectiveFlux(
     // Compute convective flux without artifical diffusion
     // Blazek page 98, eqn 4.69
 
-    const real V = q.rhou/q.rho*n.x + q.rhov/q.rho*n.y;
+    const real V = (q.rhou*n.x + q.rhov*n.y)/q.rho;
     const real p = calc_p(q, consts.gamma);
 
     return var(
@@ -91,7 +91,9 @@ var artificialDiffusion(
 var emptyBound(
     const var& q,
     const var& b,
-    const vec2& n,
+    const varVec2& g,   // Gradient
+    const vec2& d,  // Distance vector
+    const vec2& n,  // Normal vector
     const constants& consts
 ) {
     return q;
@@ -101,7 +103,9 @@ var emptyBound(
 var varWall(
     const var& q,
     const var& b,
-    const vec2& n,
+    const varVec2& g,   // Gradient
+    const vec2& d,  // Distance vector
+    const vec2& n,  // Normal vector
     const constants& consts
 ) {
     // Variable on a wall boundary
@@ -110,19 +114,24 @@ var varWall(
     U -= n*2.*dot(U, n);
     // Pressure stays the same
     const auto p = calc_p(q, consts.gamma);
-    return var(
+    const auto q_flip = var(
         q.rho,
         U.x*q.rho,
         U.y*q.rho,
         p/(consts.gamma - 1.) + 0.5*q.rho*(U.x*U.x + U.y*U.y)
     );
+    const auto d_flip = d - n*2.*dot(d, n);
+    const auto g_flip = g - prodVarVec2(dot(g, n), n)*2.;
+    return q_flip + dot(g_flip, d_flip);
 }
 
 
 var varFarfield(
     const var& q,
     const var& b,
-    const vec2& n,
+    const varVec2& g,   // Gradient
+    const vec2& d,  // Distance vector
+    const vec2& n,  // Normal vector
     const constants& consts
 ) {
     const auto U = vec2(q.rhou/q.rho, q.rhov/q.rho);
@@ -204,11 +213,15 @@ var varFarfield(
         }
     }
 
+    // Now that we have qb, add gradient
+    // Gradient is the same, direction vector is negative
+    qb -= dot(g, d);
+
     return qb;
 }
 
 
-std::map<std::string, var (*)(const var&, const var&, const vec2&, const constants&)> boundaryFuncMap() {
+std::map<std::string, var (*)(const var&, const var&, const varVec2&, const vec2&, const vec2&, const constants&)> boundaryFuncMap() {
     return {
         {"null", &emptyBound},
         {"wall", &varWall},

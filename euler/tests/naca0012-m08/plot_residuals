@@ -3,4 +3,4 @@ set size 1., 1.
 set logscale y 10
 set xlabel 'Iterations'
 set ylabel 'Residuals'
-plot for [i=2:*] 'residuals.data' using 1:i with lines title columnhead
+plot for [i=2:*] 'residuals-256.data' using 1:i with lines title columnhead
