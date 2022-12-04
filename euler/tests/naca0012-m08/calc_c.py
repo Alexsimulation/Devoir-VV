@@ -76,7 +76,7 @@ files = [
 
 print("CD, CL, CM")
 for f in files:
-    d = read_plot_file("Data_1.csv")
+    d = read_plot_file(f)
     d = rescale_x(d)
     d = add_y(d)
 
