@@ -12,7 +12,7 @@ def read_plot_file(filename):
                 if "\t" in l:
                     ls = l.split("\t")
                 else:
-                    ls = l.split(" ")
+                    ls = l.split(",")
                 for key in ls:
                     key = key.replace("\n", "").replace(" ", "")
                     d[key] = []
@@ -20,7 +20,7 @@ def read_plot_file(filename):
                 if "\t" in l:
                     ls = l.split("\t")
                 else:
-                    ls = l.split(" ")
+                    ls = l.split(",")
                 for j, key in enumerate(d.keys()):
                     d[key].append(float(ls[j]))
     
@@ -44,7 +44,12 @@ def add_y(d):
             y = naca0012(x, -1)
         d['y'].append(y)
     return d
-        
+
+def rescale_x(d):
+    x_min = np.min(d['x'])
+    x_max = np.max(d['x'])
+    d['x'] = (d['x'] - x_min)/(x_max - x_min)
+    return d
 
 def integrate(x, y, v, s=1):
     V = np.array([0., 0.])
@@ -62,21 +67,24 @@ def integrate(x, y, v, s=1):
     return V[0], V[1], M
 
 
-d = read_plot_file("airfoil.data")
+files = [
+    "Data_1.csv",
+    "Data_3.csv",
+    "Data_4.csv",
+    "Data_5.csv"
+]
 
+print("CD, CL, CM")
+for f in files:
+    d = read_plot_file("Data_1.csv")
+    d = rescale_x(d)
+    d = add_y(d)
 
-aoa = 1.25 * np.pi/180
+    aoa = 1.25 * np.pi/180
 
-D, L, CM = integrate(d['x'], d['y'], d['Cp'])
-CD = D*np.cos(aoa) + L*np.sin(aoa)
-CL = -D*np.sin(aoa) + L*np.cos(aoa)
+    D, L, CM = integrate(d['x'], d['y'], d['Cp'])
+    CD = D*np.cos(aoa) + L*np.sin(aoa)
+    CL = -D*np.sin(aoa) + L*np.cos(aoa)
 
-CDr = -0.0226
-CLr = -0.3522
-CMr = 0.0373
+    print(CD, CL, CM, sep=", ")
 
-ErrCD = np.abs(CD - CDr)/CDr
-ErrCL = np.abs(CL - CLr)/CLr
-ErrCM = -np.abs(CM - CMr)/CMr
-print(CD, CL, CM)
-print(ErrCD, ErrCL, ErrCM)
